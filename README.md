@@ -29,3 +29,14 @@ loop {
 ```
 
 Check out `t/build-order.t:32` for a more complex example.
+
+
+## `generate-dot(%tree)`
+
+Returns a very simply graphviz dot format string that you can use to write to a file and generate a chart.
+
+## `attempt-full-dot-gen(%tree, :$force = False)`
+
+Will `die` if `$force ~~ False` or if `which dot` does not return the path to graphviz's `dot`.  
+
+This method attempts to generate the dot file, runs `dot -T png -o <tmp-file.png> <tmp-file.dot>` and returns the string path to the png file.

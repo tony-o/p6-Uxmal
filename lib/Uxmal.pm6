@@ -11,6 +11,30 @@ sub build($name) {
   } if !%*tree{$name}.defined;
 }
 
+sub generate-dot(%tree) is export {
+  my $dot = "digraph G \{\n";
+  for %tree.keys -> $k {
+    for @(%tree{$k}<parents>) -> $par {
+      $dot ~= "\t$par<name> -> $k\n";
+    }
+  }
+  $dot ~= "\}";
+  $dot;
+}
+
+sub attempt-full-dot-gen(%tree, :$force = False) is export {
+  my $cmd = $force || qx{which dot}.lines[0];
+  die 'Could not find `which dot`' if !$cmd;
+  my $f-data = generate-dot %tree;
+  my $f-name = ("A".."Z").roll(32).join;
+  my $temp-file = "{$*TMPDIR}{$f-name}.dot".IO;
+  $temp-file.spurt($f-data);
+  my $out-file = "{$*TMPDIR}{$f-name}.png".IO.absolute;
+  $temp-file .=absolute;
+  qqx{dot -T png -o $out-file $temp-file};
+  $out-file;
+}
+
 sub depends-tree(@metas where {
   $_.grep({$_<depends>.defined && $_<name>.defined}).elems == $_.elems
 }) is export {
@@ -28,8 +52,10 @@ sub depends-tree(@metas where {
   %*tree;
 }
 
-sub depends-channel(%tree, $concurrency = 3) is export {
+sub depends-channel(%tree, $concurrency = $*SCHEDULER.max_threads/2) is export {
   my $channel = Channel.new;
+  warn "Dead lock may occur (concurrency={$concurrency}, max-threads={$*SCHEDULER.max_threads})"
+    if 1+$concurrency >= $*SCHEDULER.max_threads-1;
   start {
     my ($added, $kept, @promises, %started);
     repeat {
