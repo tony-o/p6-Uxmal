@@ -15,7 +15,7 @@ sub generate-dot(%tree) is export {
   my $dot = "digraph G \{\n";
   for %tree.keys -> $k {
     for @(%tree{$k}<parents>) -> $par {
-      $dot ~= "\t$par<name> -> $k\n";
+      $dot ~= "\t\"$par<name>\" -> \"$k\"\n";
     }
   }
   $dot ~= "\}";
