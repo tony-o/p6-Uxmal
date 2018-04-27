@@ -1,21 +1,28 @@
 unit module Uxmal;
 use Data::Dump;
 
-sub build($name) {
+sub build(Str:D $name) {
+  die unless $name ne '' || Any ~~ $name;
   %*tree{$name} = {
     children => [],
     parents  => [],
     status   => 'prepared',
     promise  => Promise.new,
-    name     => $name,
+    type     => $name.index(';') ?? $name.split(';', 2)[0] !! 'depends',
+    name     => $name.index(';') ?? $name.split(';', 2)[1] !! $name,
   } if !%*tree{$name}.defined;
 }
 
 sub generate-dot(%tree) is export {
-  my $dot = "digraph G \{\n";
+  my $dot      = "digraph G \{\n";
+  my %dep-type = (
+    depends       => '',
+    test-depends  => ' [style=dotted]',
+    build-depends => ' [style=dashed]',
+  );
   for %tree.keys -> $k {
     for @(%tree{$k}<parents>) -> $par {
-      $dot ~= "\t\"$par<name>\" -> \"$k\"\n";
+      $dot ~= "\t\"{$par<name>}\" -> \"{%tree{$k}<name>}\"{%dep-type{$k.split(';',2)[0]}}\n";
     }
   }
   $dot ~= "\}";
@@ -40,13 +47,15 @@ sub depends-tree(@metas where {
 }) is export {
   my %*tree;
   for @metas.grep(*.defined) -> $m {
-    build $m<name>;
-    for @($m<depends>) -> $dep {
-      build $dep;
-      %*tree{$m<name>}<children>.push(%*tree{$dep});
-      %*tree{$dep}<parents>.push(%*tree{$m<name>});
-      die "Circular reference on $dep and {$m<name>}"
-        if %*tree{$dep}<children>.grep({$_<name> eq $m<name>});
+    build "depends;$m<name>";
+    for qw<depends test-depends build-depends> -> $dep-type {
+      for @($m{$dep-type}).grep(*.defined) -> $dep {
+        build "$dep-type;$dep";
+        %*tree{"depends;$m<name>"}<children>.push(%*tree{"$dep-type;$dep"});
+        %*tree{"$dep-type;$dep"}<parents>.push(%*tree{"depends;$m<name>"});
+        die "Circular reference on $dep and {$m<name>}"
+          if %*tree{"$dep-type;$dep"}<children>.grep({$_<name> eq $m<name>});
+      }
     }
   }
   %*tree;
@@ -70,7 +79,7 @@ sub depends-channel(%tree, $concurrency = $*SCHEDULER.max_threads/2) is export {
            && !%started{$k}
         {
           %started{$k} = True;
-          $channel.send($k);
+          $channel.send($e);
           @promises.push($e<promise>);
           $added = 0;
           last if @promises.grep(*.status !~~ Kept).elems >= $concurrency;

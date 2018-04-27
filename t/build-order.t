@@ -15,9 +15,9 @@ my @build-order;
 loop {
   if $s.poll -> $key {
     CATCH { default { .say; } }
-    @build-order.push($key);
+    @build-order.push($key<name>);
     sleep rand;
-    %tdata-tree{$key}<promise>.keep;
+    $key<promise>.keep;
   };
   if $s.closed  { last };
   sleep 0.1;
@@ -57,11 +57,11 @@ loop {
   if $s.poll -> $key {
     start {
       CATCH { default { .say; } }
-      "Building $key (waiting: {%sleep-times{$key}})".say;
-      sleep %sleep-times{$key} // 1;
-      "Completing $key".say;
-      @build-order.push($key);
-      %tdata-tree{$key}<promise>.keep;
+      "Building $key<name> (waiting: {%sleep-times{$key<name>}})".say;
+      sleep %sleep-times{$key<name>} // 1;
+      "Completing $key<name>".say;
+      @build-order.push($key<name>);
+      $key<promise>.keep;
     }
   }
   if $s.closed  { last };
