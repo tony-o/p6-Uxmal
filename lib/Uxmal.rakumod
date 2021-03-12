@@ -43,6 +43,7 @@ sub attempt-full-dot-gen(%tree, :$force = False) is export {
 
 sub filter-metas(@metas, $name) is export {
   my %meta = @metas.map({$_<name> => $_});
+  die "$name not found in meta list." unless %meta{$name};
   my @m;
   my %seen;
   my @keys = $name;

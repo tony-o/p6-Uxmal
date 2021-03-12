@@ -13,6 +13,12 @@ multi MAIN($module-name) {
                  .map({|from-json(qqx`curl -s $_`)});
   try $*TMPDIR.add('uxmal.json').IO.spurt(to-json(@metas))
     unless $*TMPDIR.add('uxmal.json').IO.f;
-  my %t = depends-tree(filter-metas(@metas, $module-name));
+  my %t = try {
+    CATCH { default {
+      $*ERR.say($_.message);
+      exit 255;
+    } }
+    depends-tree(filter-metas(@metas, $module-name));
+  };
   say "png saved to => " ~ attempt-full-dot-gen(%t);
 }
