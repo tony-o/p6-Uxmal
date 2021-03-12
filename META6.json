@@ -11,7 +11,7 @@
   "name" : "Uxmal",
   "perl" : "6.c",
   "provides" : {
-    "Uxmal" : "lib/Uxmal.pm6"
+    "Uxmal" : "lib/Uxmal.rakumod"
   },
   "resources" : [ ],
   "source-url" : "https://github.com/tony-o/p6-uxmal.git",
