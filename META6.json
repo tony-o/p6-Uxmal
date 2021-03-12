@@ -5,7 +5,7 @@
     "tonyo"
   ],
   "build-depends" : [ ],
-  "depends" : [ "dot:from<bin>" ],
+  "depends" : [ "dot:from<bin>", "JSON::Fast", "Zef" ],
   "description" : "Utility for creating dependency graphs from META files and more",
   "license" : "Artistic-2.0",
   "name" : "Uxmal",
