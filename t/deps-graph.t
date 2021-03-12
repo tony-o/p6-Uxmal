@@ -13,6 +13,6 @@ lives-ok -> {
   depends-tree(@tdata);
 }, 'depends-tree constraint lives ok';
 dies-ok -> {
-  @tdata[*-1]<name>:delete;
-  depends-tree(@tdata);
+  @tdata[*-1]<depends> = qw<A>;
+  depends-tree(@tdata, :kill-circles);
 }, 'depends-tree constraint dies ok';

@@ -1,5 +1,4 @@
 unit module Uxmal;
-use Data::Dump;
 
 sub build(Str:D $name) {
   die unless $name ne '' || Any ~~ $name;
@@ -42,19 +41,35 @@ sub attempt-full-dot-gen(%tree, :$force = False) is export {
   $out-file;
 }
 
-sub depends-tree(@metas where {
-  $_.grep({$_<depends>.defined && $_<name>.defined}).elems == $_.elems
-}) is export {
+sub filter-metas(@metas, $name) is export {
+  my %meta = @metas.map({$_<name> => $_});
+  my @m;
+  my %seen;
+  my @keys = $name;
+  while my $m = @keys.shift {
+    next if %seen{$m}//False;
+    @m.push(%meta{$m}) if %meta{$m};
+    %seen{$m}++;
+    @keys.push: |(%meta{$m}<depends>//[]);
+    @keys.push: |(%meta{$m}<build-depends>//[]);
+    @keys.push: |(%meta{$m}<test-depends>//[]);
+  }
+  @m;
+}
+
+sub depends-tree(@metas, :$kill-circles = False) is export {
   my %*tree;
-  for @metas.grep(*.defined) -> $m {
+  for |@metas.grep(*.defined) -> $m {
+    next unless $m<name>;
     build "depends;$m<name>";
     for qw<depends test-depends build-depends> -> $dep-type {
       for @($m{$dep-type}).grep(*.defined) -> $dep {
         build "$dep-type;$dep";
-        %*tree{"depends;$m<name>"}<children>.push(%*tree{"$dep-type;$dep"});
+        %*tree{"depends;$m<name>"}<children>.push(%*tree{"$dep-type;$dep"})
+          ;#unless %*tree{"$dep-type;$dep"}<children>.grep({$_<name> eq $m<name>});
         %*tree{"$dep-type;$dep"}<parents>.push(%*tree{"depends;$m<name>"});
-        die "Circular reference on $dep and {$m<name>}"
-          if %*tree{"$dep-type;$dep"}<children>.grep({$_<name> eq $m<name>});
+        die "Circular reference on $dep-type;$dep and {$m<name>}"
+          if $kill-circles && %*tree{"$dep-type;$dep"}<children>.grep({$_<name> eq $m<name>});
       }
     }
   }

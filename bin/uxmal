@@ -1,0 +1,18 @@
+#!/usr/bin/env raku
+
+use Uxmal;
+use JSON::Fast;
+use Zef::Config;
+
+multi MAIN($module-name) {
+  my @metas = $*TMPDIR.add('uxmal.json').IO.f
+              ?? from-json( $*TMPDIR.add('uxmal.json').IO.slurp )
+              !! from-json( Zef::Config::guess-path.IO.slurp )<Repository>
+                 .map({(($_<options><mirrors>//[]).grep({($_//'') ~~ m/^'http'/})//[]).first})
+                 .grep({ Any !~~ $_ && ($_//'') ne '' })
+                 .map({|from-json(qqx`curl -s $_`)});
+  try $*TMPDIR.add('uxmal.json').IO.spurt(to-json(@metas))
+    unless $*TMPDIR.add('uxmal.json').IO.f;
+  my %t = depends-tree(filter-metas(@metas, $module-name));
+  say "png saved to => " ~ attempt-full-dot-gen(%t);
+}

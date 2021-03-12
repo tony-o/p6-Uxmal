@@ -77,5 +77,5 @@ dies-ok -> {
   (depends-tree @(
     { :name<A>, depends => [qw<B>] },
     { :name<B>, depends => [qw<A>] },
-  ));
+  ), :kill-circles);
 }, 'circular reference should die';

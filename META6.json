@@ -1,9 +1,11 @@
 {
+  "api": 0,
+  "auth": "zef:tony-o",
   "authors" : [
     "tonyo"
   ],
   "build-depends" : [ ],
-  "depends" : [ ],
+  "depends" : [ "dot:from<bin>" ],
   "description" : "Utility for creating dependency graphs from META files and more",
   "license" : "Artistic-2.0",
   "name" : "Uxmal",
@@ -15,5 +17,5 @@
   "source-url" : "https://github.com/tony-o/p6-uxmal.git",
   "tags" : [ ],
   "test-depends" : [ ],
-  "version" : "0.0.1"
+  "version" : "1"
 }
